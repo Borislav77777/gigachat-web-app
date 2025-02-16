@@ -1,55 +1,64 @@
 import uuid
 import requests
 import base64
-from datetime import datetime, timedelta
+import warnings
+import json
+from urllib3.exceptions import InsecureRequestWarning
 
-class TokenManager:
-    def __init__(self):
-        # Ваши учетные данные
-        self.client_id = "13fae9d7-4cfe-4ab2-be7a-8669606e529e"
-        self.client_secret = "74c4d938-4d89-417d-a383-5f0aa781a9e2"  # Получите на developers.sber.ru
-        self.token = None
-        self.token_expires = None
+# Отключаем предупреждение о небезопасном соединении
+warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
-    def get_token(self):
-        # Проверяем, нужно ли обновить токен
-        if self._is_token_expired():
-            self._refresh_token()
-        return self.token
+# Ваши учетные данные
+client_id = "13fae9d7-4cfe-4ab2-be7a-8669606e529e"
+client_secret = "74c4d938-4d89-417d-a383-5f0aa781a9e2"
 
-    def _is_token_expired(self):
-        if not self.token or not self.token_expires:
-            return True
-        # Обновляем токен за 1 минуту до истечения
-        return datetime.now() >= self.token_expires - timedelta(minutes=1)
+try:
+    # Создаем ключ авторизации
+    auth_data = f"{client_id}:{client_secret}"
+    auth_key = base64.b64encode(auth_data.encode()).decode()
 
-    def _refresh_token(self):
-        try:
-            # Создаем ключ авторизации
-            auth_data = f"{self.client_id}:{self.client_secret}"
-            auth_key = base64.b64encode(auth_data.encode()).decode()
+    # Генерируем UUID
+    request_id = str(uuid.uuid4())
 
-            # Генерируем UUID для запроса
-            request_id = str(uuid.uuid4())
+    # Отправляем запрос на получение токена
+    response = requests.post(
+        'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
+        headers={
+            'RqUID': request_id,
+            'Authorization': f'Basic {auth_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        },
+        data={
+            'scope': 'GIGACHAT_API_PERS'
+        },
+        verify=False
+    )
+    
+    # Выводим статус и ответ для отладки
+    print(f"Статус ответа: {response.status_code}")
+    print(f"Ответ сервера: {response.text}")
+    
+    # Проверяем успешность запроса
+    response.raise_for_status()
+    
+    # Получаем токен
+    data = response.json()
+    if 'access_token' in data:
+        token = data['access_token']
+        print(f"\nПолученный токен:\n{token}")
+        
+        # Сохраняем токен в .env файл
+        with open('.env', 'w') as f:
+            f.write(f"GIGACHAT_TOKEN={token}")
+    else:
+        print(f"Ошибка: токен не найден в ответе")
+        print(f"Содержимое ответа: {data}")
 
-            # Отправляем запрос на получение токена
-            response = requests.post(
-                'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
-                headers={
-                    'RqUID': request_id,
-                    'Authorization': f'Basic {auth_key}'
-                },
-                data={
-                    'scope': 'GIGACHAT_API_PERS'
-                },
-                verify=False  # Только для тестирования!
-            )
-
-            data = response.json()
-            self.token = data['access_token']
-            # Устанавливаем время истечения токена (30 минут)
-            self.token_expires = datetime.now() + timedelta(minutes=30)
-
-        except Exception as e:
-            print(f"Ошибка получения токена: {str(e)}")
-            raise
+except requests.exceptions.RequestException as e:
+    print(f"Ошибка запроса: {str(e)}")
+except json.JSONDecodeError as e:
+    print(f"Ошибка парсинга JSON: {str(e)}")
+    print(f"Текст ответа: {response.text}")
+except Exception as e:
+    print(f"Неожиданная ошибка: {str(e)}")
