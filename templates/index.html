@@ -2,19 +2,63 @@
 <html>
 <head>
     <title>GigaChat Web App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-container {
+            margin-top: 20px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #message {
+            flex: 1;
+            padding: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #response {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
 <body>
     <h1>GigaChat Web App</h1>
-    <div>
-        <input type="text" id="message" placeholder="Введите ваше сообщение">
-        <button onclick="sendMessage()">Отправить</button>
+    <div class="chat-container">
+        <div class="input-container">
+            <input type="text" id="message" placeholder="Введите ваше сообщение">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+        <div id="response"></div>
     </div>
-    <div id="response"></div>
 
     <script>
     async function sendMessage() {
         const messageInput = document.getElementById('message');
         const responseDiv = document.getElementById('response');
+        const message = messageInput.value;
+        
+        if (!message) return;
+        
+        responseDiv.innerText = 'Отправка сообщения...';
         
         try {
             const response = await fetch('/api/chat', {
@@ -22,7 +66,9 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: messageInput.value })
+                body: JSON.stringify({
+                    message: message
+                })
             });
             
             const data = await response.json();
@@ -33,9 +79,18 @@
                 responseDiv.innerText = data.response;
             }
         } catch (error) {
-            responseDiv.innerText = 'Ошибка соединения: ' + error;
+            responseDiv.innerText = 'Ошибка: ' + error;
         }
+        
+        messageInput.value = '';
     }
+
+    // Добавляем обработку Enter
+    document.getElementById('message').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
     </script>
 </body>
 </html>
