@@ -1,17 +1,4 @@
-# Секретные данные
+*.pyc
+__pycache__
 .env
-*.pem
-*.key
-
-# Кэш Python
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Виртуальное окружение
-venv/
-env/
-
-# IDE
-.idea/
-.vscode/
+*.log

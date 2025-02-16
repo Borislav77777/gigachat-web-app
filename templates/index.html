@@ -12,20 +12,29 @@
     <div id="response"></div>
 
     <script>
-    function sendMessage() {
-        const message = document.getElementById('message').value;
-        fetch('/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ message: message })
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('response').innerText = data.response;
-        })
-        .catch(error => console.error('Error:', error));
+    async function sendMessage() {
+        const messageInput = document.getElementById('message');
+        const responseDiv = document.getElementById('response');
+        
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: messageInput.value })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                responseDiv.innerText = 'Ошибка: ' + data.error;
+            } else {
+                responseDiv.innerText = data.response;
+            }
+        } catch (error) {
+            responseDiv.innerText = 'Ошибка соединения: ' + error;
+        }
     }
     </script>
 </body>
