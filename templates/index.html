@@ -3,41 +3,7 @@
 <head>
     <title>GigaChat Web App</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .chat-container {
-            margin-top: 20px;
-        }
-        .input-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        #message {
-            flex: 1;
-            padding: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #response {
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            min-height: 100px;
-            white-space: pre-wrap;
-        }
+        /* ... существующие стили ... */
     </style>
 </head>
 <body>
@@ -51,6 +17,9 @@
     </div>
 
     <script>
+    const BASE_URL = 'https://ngw.devices.sberbank.ru:9443';
+    const GIGACHAT_TOKEN = '{{ token }}';  // Получаем токен из Flask
+
     async function sendMessage() {
         const messageInput = document.getElementById('message');
         const responseDiv = document.getElementById('response');
@@ -61,13 +30,19 @@
         responseDiv.innerText = 'Отправка сообщения...';
         
         try {
-            const response = await fetch('/api/chat', {
+            const response = await fetch(`${BASE_URL}/api/v1/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GIGACHAT_TOKEN}`
                 },
                 body: JSON.stringify({
-                    message: message
+                    model: 'GigaChat',
+                    messages: [
+                        {"role": "system", "content": ""},
+                        {"role": "user", "content": message}
+                    ],
+                    profanity_check: true
                 })
             });
             
@@ -76,7 +51,7 @@
             if (data.error) {
                 responseDiv.innerText = 'Ошибка: ' + data.error;
             } else {
-                responseDiv.innerText = data.response;
+                responseDiv.innerText = data.choices[0].message.content;
             }
         } catch (error) {
             responseDiv.innerText = 'Ошибка: ' + error;
@@ -85,7 +60,6 @@
         messageInput.value = '';
     }
 
-    // Добавляем обработку Enter
     document.getElementById('message').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             sendMessage();
