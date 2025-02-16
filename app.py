@@ -18,17 +18,20 @@ def home():
 def chat():
     try:
         user_message = request.json['message']
-        # Исправленный формат запроса к GigaChat
-        response = giga.chat([
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ])
+        # Создаем правильный формат сообщения для API
+        messages = [{
+            "role": "user",
+            "content": user_message
+        }]
+        
+        # Отправляем запрос в правильном формате
+        response = giga.chat(messages=messages)
+        
         return jsonify({
             'response': response.choices[0].message.content
         })
     except Exception as e:
+        print(f"Ошибка: {str(e)}")  # Для отладки
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
